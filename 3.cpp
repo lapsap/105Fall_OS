@@ -3,6 +3,7 @@
 #include <vector>
 #include <sstream>
 #include <string>
+#include <fstream>
 
 using namespace std;
 
@@ -26,7 +27,7 @@ void pa(string cmd1, char **cmd2, int fd, int std){
 }
 
 void la_do(vector<string> in){
-	bool bg = false , lpipe = false;
+	bool bg = false , lpipe = false , lless = false, lmore = false;
 	char *data[in.size()+1];
 	char *data2[in.size()];
 	int counter = 0;
@@ -34,6 +35,12 @@ void la_do(vector<string> in){
 	for(auto&& c : in){
 		if( c == "|"){
 			lpipe = true;
+			break;
+		}else if ( c == "<"){
+			lless = true;
+			break;
+		}else if( c == ">"){
+			lmore = true;
 			break;
 		}
 		data[counter] = new char[c.size()+1];
@@ -47,7 +54,7 @@ void la_do(vector<string> in){
 	data[counter] = new char();
 	data[counter] = NULL;
 
-	if( lpipe ){
+	if( lpipe || lless || lmore ){
 		int count = 0;
 		for(int i=counter+1; i<in.size(); i++){
 			data2[count] = new char[in[i].size()+1];
@@ -72,9 +79,9 @@ void la_do(vector<string> in){
 	string pat = "";
 	for( int i=0; i<le-1; i++)
 		pat += path[i];
-	if( !lpipe && !bg )
-		pa( pat, data, -1 , -1);
-	else{
+	if( !lpipe && !bg && !lless && !lmore )
+		pa( pat, data, -1 , -1);  //exec without pipe
+	else if(lpipe) {
 		int fd1[2]; pipe(fd1);
 //		pa( pat, data, fd1[1], 1);
 		data0[1] = data2[0];
@@ -91,6 +98,28 @@ void la_do(vector<string> in){
 		close( fd2[1] );
 		pa( pat1, data2, fd2[0], 0 );
 		close( fd2[0] );
+
+	}else if(lmore){
+		ofstream fout(data2[0]);
+		int fd1[2]; pipe(fd1);
+		pa( pat, data, fd1[1], 1 );
+		close( fd1[1] );
+		char str[10000];
+		int le = read( fd1[0], str, sizeof(str) );
+		close( fd1[0] );
+		str[le] = '\0';
+		fout << str;
+		fout.close();
+	}else if(lless){
+		ifstream fin(data2[0]);
+		int fd1[2]; pipe(fd1);
+		string tmp;
+		string buff;
+		while( getline( fin, tmp) )
+			buff += tmp + '\n';
+		write( fd1[1], buff.c_str(), (strlen(buff.c_str())+1) );
+		close( fd1[1] );
+		pa( pat, data, fd1[0], 0 );
 
 	}
 
