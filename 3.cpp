@@ -125,18 +125,34 @@ void la_do(vector<string> in){
 
 }
 
+vector<string> la_split(string in){
+	vector<string> result;
+	string tmp = "";
+	for(int i=0; i<in.size(); i++){
+		if( in[i] == ' '){
+			if(tmp!="") result.push_back(tmp);
+			tmp = "";
+		}else if( in[i] == '|' || in[i] == '>' || in[i] == '<' ){
+			if(tmp!="") result.push_back(tmp);
+			tmp = "";
+			tmp += in[i];
+			result.push_back(tmp);
+			tmp = "";
+		}else
+			tmp += in[i];
+	}
+	if( tmp != "" )
+		result.push_back(tmp);
+
+	return result;
+}
+
 int main(){
 	cout << ">";
 	string in, tmp;
 	getline(cin,in);
 	while(in!="exit"){
-		stringstream ss(in);
-		int counter = 0;
-		vector<string> cmd;
-		while(ss >> tmp, ss){
-			counter++;
-			cmd.push_back(tmp);
-		}   
+		vector<string> cmd = la_split(in);
 		la_do(cmd);
 		cout << ">";
 		getline(cin,in);
